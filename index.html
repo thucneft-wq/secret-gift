@@ -90,9 +90,7 @@
         @keyframes drawHeart { to { stroke-dashoffset: 0; } }
         @keyframes fadeInText { to { opacity: 1; } }
 
-        /* --------------------------------------------------
-           MÀN HÌNH BẮT BUỘC XOAY NGANG (CHỈ DÀNH CHO DI ĐỘNG)
-        -------------------------------------------------- */
+        /* MÀN HÌNH BẮT BUỘC XOAY NGANG */
         #rotate-overlay {
             position: fixed;
             top: 0;
@@ -100,7 +98,7 @@
             width: 100%;
             height: 100%;
             background-color: #000000;
-            z-index: 9999; /* Luôn nằm trên cùng */
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -111,7 +109,6 @@
             transition: opacity 0.5s ease;
         }
 
-        /* Icon điện thoại xoay chân thực */
         .phone-icon {
             width: 50px;
             height: 80px;
@@ -169,26 +166,74 @@
 
     <script>
         // --------------------------------------------------
-        // LOGIC KIỂM TRA HƯỚNG MÀN HÌNH
+        // CẤU HÌNH MƯA MA TRẬN
+        // --------------------------------------------------
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        const fontSize = 16;
+        let drops = [];
+
+        function initMatrix() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const columns = Math.floor(canvas.width / fontSize);
+            
+            // Nếu số cột mới lớn hơn số cột cũ (khi xoay ngang), thì thêm cột mới
+            if (columns > drops.length) {
+                for (let x = drops.length; x < columns; x++) {
+                    // Để các hạt mưa rơi tự nhiên, không bị thành một đường thẳng ngang
+                    drops[x] = Math.floor(Math.random() * -50); 
+                }
+            }
+        }
+        
+        // Khởi tạo lần đầu
+        initMatrix();
+
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#64a1f4'; 
+            ctx.font = fontSize + 'px monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                // Chỉ vẽ nếu giọt mưa đã bắt đầu rơi vào màn hình (drops[i] >= 0)
+                if (drops[i] >= 0) {
+                    const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                }
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 50);
+
+        // --------------------------------------------------
+        // LOGIC KIỂM TRA HƯỚNG MÀN HÌNH & KỊCH BẢN CHỮ
         // --------------------------------------------------
         const overlay = document.getElementById('rotate-overlay');
-        let isScriptStarted = false; // Đảm bảo kịch bản chỉ chạy 1 lần duy nhất khi xoay ngang
+        let isScriptStarted = false; 
 
         function checkOrientation() {
-            // Nếu chiều rộng lớn hơn chiều cao -> Đang nằm ngang
+            // Cập nhật lại kích thước ma trận mỗi khi xoay máy
+            initMatrix();
+
             if (window.innerWidth > window.innerHeight) {
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.style.display = 'none';
                 }, 500);
 
-                // Kích hoạt chạy hiệu ứng chữ (nếu chưa chạy)
                 if (!isScriptStarted) {
                     isScriptStarted = true;
                     setTimeout(playScript, 1000); 
                 }
             } else {
-                // Nếu người dùng cố tình xoay dọc lại, hiện lại màn hình chặn
                 overlay.style.display = 'flex';
                 setTimeout(() => {
                     overlay.style.opacity = '1';
@@ -196,55 +241,20 @@
             }
         }
 
-        // Lắng nghe sự kiện thay đổi kích thước/xoay màn hình
+        // Delay 1 chút khi xoay trên Safari iOS để lấy chính xác kích thước mới
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            checkOrientation();
+            setTimeout(checkOrientation, 200);
         });
-
-        // Kiểm tra ngay khi vừa tải trang
         window.addEventListener('load', checkOrientation);
 
-        // --------------------------------------------------
-        // MƯA MA TRẬN 
-        // --------------------------------------------------
-        const canvas = document.getElementById('matrix');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
-        const fontSize = 16;
-        const columns = canvas.width / fontSize;
-        const drops = [];
-        for (let x = 0; x < columns; x++) drops[x] = 1;
-
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#64a1f4'; 
-            ctx.font = fontSize + 'px monospace';
-            for (let i = 0; i < drops.length; i++) {
-                const text = characters.charAt(Math.floor(Math.random() * characters.length));
-                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                drops[i]++;
-            }
-        }
-        setInterval(drawMatrix, 50);
-
-        // --------------------------------------------------
-        // KỊCH BẢN CHẠY CHỮ
-        // --------------------------------------------------
         const script = [
             "3",
             "2",
             "1",
-            "Anhhh ơiiii",
-            "Anh có đồng ý",
-            "Làm người yêu em hong?",
-            "Em iu Anhhh 💙"
+            "Ngọc ơiiiiii",
+            "Bi muốn hỏi là",
+            "Ngọc có thể nàooooooo",
+            "Làm làm làm ny của Bi hăm dạaaaaaaa 💙"
         ];
 
         let currentIndex = 0;
